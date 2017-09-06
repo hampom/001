@@ -3,4 +3,7 @@
 /vendor/*
 /logs/*
 /sql/*
+!/sql/migrations
+!/sql/seeds
 /npm-debug.log
+composer.phar
