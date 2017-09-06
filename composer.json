@@ -2,6 +2,7 @@
     "require": {
         "slim/slim": "^3.8",
         "monolog/monolog": "^1.23",
-        "robmorgan/phinx": "^0.9.0"
+        "robmorgan/phinx": "^0.9.0",
+        "eluceo/ical": "^0.12.1"
     }
 }

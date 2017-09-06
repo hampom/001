@@ -1,6 +1,8 @@
 <?php
 use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
+use \Eluceo\iCal\Component\Calendar;
+use \Eluceo\iCal\Component\Event;
 
 require '../vendor/autoload.php';
 
@@ -96,6 +98,32 @@ $app->delete('/api/items/{id}', function (Request $request, Response $response) 
     $sth->execute([':id' => $id]);
 
     return $response->withJson([]);
+});
+
+$app->get('/ical', function (Request $request, Response $response) {
+    $vCalendar = new Calendar("default");
+
+    $sth = $this->db->prepare('select title, date from items');
+    $sth->execute();
+    $items = $sth->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($items as $item) {
+        $vCalendar->addComponent(
+            (new Event())
+                ->setDtStart(new \DateTime($item['date']))
+                ->setDtEnd(new \DateTime($item['date']))
+                ->setNoTime(true)
+                ->setSummary($item['title'])
+        );
+    }
+
+    $body = $response->getBody();
+    $body->write($vCalendar->render());
+
+    return $response
+        ->withHeader('Content-Type', 'text/calendar; charset=utf-8')
+        ->withHeader('Content-Disposition', 'attachment; filename="cal.ics"')
+        ->withBody($body);
 });
 
 $app->run();
