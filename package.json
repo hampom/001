@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "scripts": {
+    "dev": "webpack resources/assets/js/index.js public/js/app.js -d",
+    "prod": "webpack resources/assets/js/index.js public/js/app.js -p"
+  },
+  "devDependencies": {
+    "mithril": "^1.1.3",
+    "mithril-stream": "^1.1.0",
+    "moment": "^2.18.1",
+    "webpack": "^3.5.5"
+  },
+  "dependencies": {}
+}
