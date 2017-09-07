@@ -26,15 +26,15 @@ module.exports = {
     Task.loadList(vnode.state.date)
   },
   edit: function (task) {
-    Task.update(task)
+    Task.update(task, this.date)
   },
   delete: function(task) {
     if (!confirm("本当に削除しますか？")) return
-    Task.delete(task)
+    Task.delete(task, this.date)
   },
   done: function(task) {
     task.done(!task.done())
-    Task.update(task)
+    Task.update(task, this.date)
   },
   view: function(vnode) {
     return [
@@ -56,6 +56,9 @@ module.exports = {
               ),
               task.title
             ),
+            moment().format('YYYY-MM-DD') != moment(task.date()).format('YYYY-MM-DD')
+              ? m("small.text-warning.text-right", moment(task.date()).format('YYYY-MM-DD'))
+              : "",
             m(".description.mar-b-sm",
               {
                 style: {

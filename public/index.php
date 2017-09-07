@@ -41,7 +41,13 @@ $app->get('/api/items/{year}-{month}-{day}', function (Request $request, Respons
     $sth = $this->db->newQuery()
         ->select('id, title, desc, date, done')
         ->from('items')
-        ->where(['date' => "$year-$month-$day"])
+        ->where(['date <' => "$year-$month-$day"])
+        ->andWhere(['done' => (int)false])
+        ->orWhere(['date' => "$year-$month-$day"])
+        ->order([
+            'date' => 'ASC',
+            'id' => 'ASC',
+        ])
         ->execute();
 
     $items = [];

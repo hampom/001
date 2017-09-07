@@ -31,7 +31,7 @@ var Task = {
       Task.loadList(date)
     })
   },
-  update: function(task) {
+  update: function(task, date) {
     return m.request({
       method: "PUT",
       url: API_URI + "/" + task.id(),
@@ -44,16 +44,16 @@ var Task = {
       type: taskModel
     })
     .then(function(result) {
-      Task.loadList(result.date())
+      Task.loadList(date)
     })
   },
-  delete: function(task) {
+  delete: function(task, date) {
     return m.request({
       method: "DELETE",
       url: API_URI + "/" + task.id(),
     })
     .then(function(result) {
-      Task.loadList(task.date())
+      Task.loadList(date)
     })
   },
   loadList: function(date) {
