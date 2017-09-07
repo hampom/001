@@ -3,6 +3,7 @@ use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
 use \Eluceo\iCal\Component\Calendar;
 use \Eluceo\iCal\Component\Event;
+use \Cake\Database\Connection;
 
 require '../vendor/autoload.php';
 
@@ -18,7 +19,10 @@ $container['logger'] = function ($c) {
 };
 
 $container['db'] = function ($c) {
-    return new \PDO('sqlite:../sql/task.db');
+    return new Connection([
+        'driver' => '\Cake\Database\Driver\Sqlite',
+        'database' => '../sql/task.db'
+    ]);
 };
 
 $container['view'] = function ($c) {
@@ -34,15 +38,17 @@ $app->get('/api/items/{year}-{month}-{day}', function (Request $request, Respons
     $month = $request->getAttribute('month');
     $day = $request->getAttribute('day');
 
-    $sth = $this->db->prepare('select id, title, desc, date, done from items where date = :date');
-    $sth->execute([':date' => "$year-$month-$day"]);
+    $sth = $this->db->newQuery()
+        ->select('id, title, desc, date, done')
+        ->from('items')
+        ->where(['date' => "$year-$month-$day"])
+        ->execute();
 
-    $items = $sth->fetchAll(PDO::FETCH_ASSOC);
-    array_walk($items, function (&$v, $k) {
-        if (isset($v['done'])) {
-            $v['done'] = (bool)$v['done'];
-        }
-    });
+    $items = [];
+    while ($item = $sth->fetch('assoc')) {
+        $item['done'] = (bool)$item['done'];
+        $items[] = $item;
+    }
 
     return $response->withJson($items);
 });
@@ -54,14 +60,19 @@ $app->post('/api/items', function (Request $request, Response $response) {
     if (empty($title) || empty($date)) {
     }
 
-    $sth = $this->db->prepare('insert into items(user_id, title, desc, date, done) values(1, :title, "", :date, 0)');
-    $sth->execute([':title' => $title, ':date' => $date]);
-    $lastId = $this->db->lastInsertId();
+    $sth = $this->db->insert(
+        'items',
+        ['user_id' => 1, 'title' => $title, 'desc' => "", 'date' => $date, 'done' => 0]
+    );
+    $id = $sth->lastInsertId();
 
-    $sth = $this->db->prepare('select id, title, desc, date, done from items where id = :last_id');
-    $sth->execute([':last_id' => $lastId]);
+    $item = $this->db->newQuery()
+        ->select('id, title, desc, date, done')
+        ->from('items')
+        ->where(['id' => $id])
+        ->execute()
+        ->fetch('assoc');
 
-    $item = $sth->fetch(PDO::FETCH_ASSOC);
     $item['done'] = (bool)$item['done'];
 
     return $response->withJson($item);
@@ -77,19 +88,22 @@ $app->put('/api/items/{id}', function (Request $request, Response $response) {
     if (empty($title) || empty($desc) || empty($done) || empty($date)) {
     }
 
-    $sth = $this->db->prepare('update items set title = :title, desc = :desc, done = :done, date = :date where id = :id');
-    $sth->execute([
-        ':title' => $title,
-        ':desc' => $desc,
-        ':done' => (int)$done,
-        ':date' => $date,
-        'id' => $id
-    ]);
+    $this->db->update(
+        'items',
+        ['title' => $title, 'desc' => $desc, 'done' => (int)$done, 'date' => $date],
+        ['id' => $id]
+    );
 
     $sth = $this->db->prepare('select id, title, desc, date, done from items where id = :id');
     $sth->execute([':id' => $id]);
 
-    $item = $sth->fetch(PDO::FETCH_ASSOC);
+    $item = $this->db->newQuery()
+        ->select('id, title, desc, date, done')
+        ->from('items')
+        ->where(['id' => $id])
+        ->execute()
+        ->fetch('assoc');
+
     $item['done'] = (bool)$item['done'];
 
     return $response->withJson($item);
@@ -98,12 +112,10 @@ $app->put('/api/items/{id}', function (Request $request, Response $response) {
 $app->delete('/api/items/{id}', function (Request $request, Response $response) {
     $id = $request->getAttribute('id');
 
-    $result = $this->db->query('select count(*) from items where id = :id');
-    if ($result->fetchColumn() != 1) {
-    }
-
-    $sth = $this->db->prepare("delete from items where id = :id");
-    $sth->execute([':id' => $id]);
+    $this->db->delete(
+        'items',
+        ['id' => $id]
+    );
 
     return $response->withJson([]);
 });
@@ -111,11 +123,17 @@ $app->delete('/api/items/{id}', function (Request $request, Response $response) 
 $app->get('/ical', function (Request $request, Response $response) {
     $vCalendar = new Calendar("default");
 
-    $sth = $this->db->prepare('select title, date from items');
-    $sth->execute();
-    $items = $sth->fetchAll(PDO::FETCH_ASSOC);
+    $sth = $this->db->newQuery()
+        ->select('title, date')
+        ->from('items')
+        ->execute();
 
-    foreach ($items as $item) {
+    $items = [];
+    while ($item = $sth->fetch('assoc')) {
+        if (isset($item['done'])) {
+            $item['done'] = (bool)$item['done'];
+        }
+
         $vCalendar->addComponent(
             (new Event())
                 ->setDtStart(new \DateTime($item['date']))

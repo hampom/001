@@ -12,6 +12,7 @@ module.exports = {
     return m("form",
       {
         onsubmit: function (e) {
+          e.preventDefault()
           Task
             .add(vnode.state.title(), vnode.attrs.date())
             .then(vnode.state.title(""))
