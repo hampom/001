@@ -10,16 +10,24 @@ $app = new \Slim\App;
 
 $container = $app->getContainer();
 
-$container['logger'] = function($c) {
+$container['logger'] = function ($c) {
     $logger = new \Monolog\Logger('my_logger');
     $file_handler = new \Monolog\Handler\StreamHandler("../logs/app.log");
     $logger->pushHandler($file_handler);
     return $logger;
 };
 
-$container['db'] = function($c) {
+$container['db'] = function ($c) {
     return new \PDO('sqlite:../sql/task.db');
 };
+
+$container['view'] = function ($c) {
+    return new \Slim\Views\PhpRenderer('../src/views');
+};
+
+$app->get('/[{year:[0-9]+}/{month:[0-9]+}/{day:[0-9]+}]', function (Request $request, Response $response) {
+    return $this->view->render($response, 'index.tpl');
+});
 
 $app->get('/api/items/{year}-{month}-{day}', function (Request $request, Response $response) {
     $year = $request->getAttribute('year');
@@ -30,7 +38,7 @@ $app->get('/api/items/{year}-{month}-{day}', function (Request $request, Respons
     $sth->execute([':date' => "$year-$month-$day"]);
 
     $items = $sth->fetchAll(PDO::FETCH_ASSOC);
-    array_walk($items, function(&$v, $k) {
+    array_walk($items, function (&$v, $k) {
         if (isset($v['done'])) {
             $v['done'] = (bool)$v['done'];
         }
