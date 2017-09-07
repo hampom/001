@@ -12,6 +12,9 @@ var taskModel = function(data) {
   }, [this.desc])
   this.date = Stream(data.date)
   this.done = Stream(data.done)
+  this.schedule = Stream(data.schedule)
+  this.startAt = Stream(data.startAt)
+  this.endAt = Stream(data.endAt)
   this.edit = Stream(false)
 }
 
@@ -39,7 +42,10 @@ var Task = {
         title: task.title(),
         desc: task.desc(),
         done: task.done(),
-        date: task.date()
+        date: task.date(),
+        schedule: task.schedule(),
+        startAt: task.startAt(),
+        endAt: task.endAt()
       },
       type: taskModel
     })

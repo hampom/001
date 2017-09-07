@@ -39,7 +39,7 @@ $app->get('/api/items/{year}-{month}-{day}', function (Request $request, Respons
     $day = $request->getAttribute('day');
 
     $sth = $this->db->newQuery()
-        ->select('id, title, desc, date, done')
+        ->select('id, title, desc, date, done, schedule, startAt, endAt')
         ->from('items')
         ->where(['date <' => "$year-$month-$day"])
         ->andWhere(['done' => (int)false])
@@ -53,6 +53,7 @@ $app->get('/api/items/{year}-{month}-{day}', function (Request $request, Respons
     $items = [];
     while ($item = $sth->fetch('assoc')) {
         $item['done'] = (bool)$item['done'];
+        $item['schedule'] = (bool)$item['schedule'];
         $items[] = $item;
     }
 
@@ -68,18 +69,28 @@ $app->post('/api/items', function (Request $request, Response $response) {
 
     $sth = $this->db->insert(
         'items',
-        ['user_id' => 1, 'title' => $title, 'desc' => "", 'date' => $date, 'done' => 0]
+        [
+            'user_id' => 1,
+            'title' => $title,
+            'desc' => "",
+            'date' => $date,
+            'done' => 0,
+            'schedule' => 0,
+            'startAt' => "",
+            'endAt' => ""
+        ]
     );
     $id = $sth->lastInsertId();
 
     $item = $this->db->newQuery()
-        ->select('id, title, desc, date, done')
+        ->select('id, title, desc, date, done, scheudle, startAt, endAt')
         ->from('items')
         ->where(['id' => $id])
         ->execute()
         ->fetch('assoc');
 
     $item['done'] = (bool)$item['done'];
+    $item['schedule'] = (bool)$item['schedule'];
 
     return $response->withJson($item);
 });
@@ -90,27 +101,36 @@ $app->put('/api/items/{id}', function (Request $request, Response $response) {
     $desc = $request->getParsedBodyParam('desc');
     $done = $request->getParsedBodyParam('done');
     $date = $request->getParsedBodyParam('date');
+    $schedule = $request->getParsedBodyParam('schedule');
+    $startAt = $request->getParsedBodyParam('startAt');
+    $endAt = $request->getParsedBodyParam('endAt');
 
-    if (empty($title) || empty($desc) || empty($done) || empty($date)) {
+    if (empty($title) || empty($desc) || empty($done) || empty($date) || empty($scheudle) || empty($startAt) || empty($endAt)) {
     }
 
     $this->db->update(
         'items',
-        ['title' => $title, 'desc' => $desc, 'done' => (int)$done, 'date' => $date],
+        [
+            'title' => $title,
+            'desc' => $desc,
+            'done' => (int)$done,
+            'date' => $date,
+            'schedule' => (int)$schedule,
+            'startAt' => $startAt,
+            'endAt' => $endAt
+        ],
         ['id' => $id]
     );
 
-    $sth = $this->db->prepare('select id, title, desc, date, done from items where id = :id');
-    $sth->execute([':id' => $id]);
-
     $item = $this->db->newQuery()
-        ->select('id, title, desc, date, done')
+        ->select('id, title, desc, date, done, schedule, startAt, endAt')
         ->from('items')
         ->where(['id' => $id])
         ->execute()
         ->fetch('assoc');
 
     $item['done'] = (bool)$item['done'];
+    $item['schedule'] = (bool)$item['schedule'];
 
     return $response->withJson($item);
 });
@@ -130,23 +150,23 @@ $app->get('/ical', function (Request $request, Response $response) {
     $vCalendar = new Calendar("default");
 
     $sth = $this->db->newQuery()
-        ->select('title, date')
+        ->select('title, date, startAt, endAt')
         ->from('items')
+        ->where('schedule', (int)true)
         ->execute();
 
     $items = [];
     while ($item = $sth->fetch('assoc')) {
-        if (isset($item['done'])) {
-            $item['done'] = (bool)$item['done'];
+        $event = new Event();
+        $event->setDtStart(new \DateTime(sprintf("%s %s", $item['date'], $item['startAt'])))
+              ->setDtEnd(new \DateTime(sprintf("%s %s", $item['date'], $item['endAt'])))
+              ->setSummary($item['title']);
+
+        if (empty($item['startAt']) || empty($item['endAt'])) {
+            $event->setNoTime(true);
         }
 
-        $vCalendar->addComponent(
-            (new Event())
-                ->setDtStart(new \DateTime($item['date']))
-                ->setDtEnd(new \DateTime($item['date']))
-                ->setNoTime(true)
-                ->setSummary($item['title'])
-        );
+        $vCalendar->addComponent($event);
     }
 
     $body = $response->getBody();

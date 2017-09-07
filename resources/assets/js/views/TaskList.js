@@ -56,9 +56,18 @@ module.exports = {
               ),
               task.title
             ),
-            moment().format('YYYY-MM-DD') != moment(task.date()).format('YYYY-MM-DD')
-              ? m("small.text-warning.text-right", moment(task.date()).format('YYYY-MM-DD'))
-              : "",
+            m(".row", [
+              m(".col-1",
+                moment().format('YYYY-MM-DD') != moment(task.date()).format('YYYY-MM-DD')
+                  ? m("small.text-warning", [m("i.fa.fa-fw.fa-plus-circle"), moment(task.date()).format('YYYY-MM-DD')])
+                  : "",
+              ),
+              m(".col-3.text-primary",
+                task.schedule()
+                  ? [m("i.fa.fa-fw.fa-calendar"), task.startAt()? task.startAt() + " ～ " + task.endAt(): "終日"]
+                  : ""
+              )
+            ]),
             m(".description.mar-b-sm",
               {
                 style: {
@@ -74,6 +83,19 @@ module.exports = {
                   display: task.edit() ? "block" : "none"
                 }
               },
+              m(".input-group.w-50", [
+                m("span.input-addon", [
+                  m("label", [
+                    m("i.fa.fa-fw", {
+                      class: task.schedule() ?'fa-toggle-on': 'fa-toggle-off',
+                    }),
+                    m("span", {onclick: function (v) { task.schedule(!task.schedule()) }}, "スケジュール"),
+                  ])
+                ]),
+                m("input[type=text]", {'placeholder': '開始時間 xx:xx', oninput: m.withAttr("value", task.startAt), value: task.startAt() }),
+                m("span.input-addon", " ～ "),
+                m("input[type=text]", {'placeholder': '終了時間 xx:xx', oninput: m.withAttr("value", task.endAt), value: task.endAt() })
+              ]),
               m(".input-field", [
                 m("textarea", {
                   style: {
