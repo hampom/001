@@ -155,7 +155,6 @@ $app->get('/ical', function (Request $request, Response $response) {
         ->where('schedule', (int)true)
         ->execute();
 
-    $items = [];
     while ($item = $sth->fetch('assoc')) {
         $event = new Event();
         $event->setDtStart(new \DateTime(sprintf("%s %s", $item['date'], $item['startAt'])))

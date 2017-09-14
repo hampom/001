@@ -6,7 +6,7 @@ var Task = require("../models/Task")
 var NewTask = require("./NewTask")
 
 function setHeight(domNode) {
-  let height = 300;
+  var height = 300;
   domNode.style.height = '';
   if (domNode.scrollHeight > height) {
     height = domNode.scrollHeight;
@@ -60,7 +60,7 @@ module.exports = {
               m(".col-1",
                 moment().format('YYYY-MM-DD') != moment(task.date()).format('YYYY-MM-DD')
                   ? m("small.text-warning", [m("i.fa.fa-fw.fa-plus-circle"), moment(task.date()).format('YYYY-MM-DD')])
-                  : "",
+                  : ""
               ),
               m(".col-3.text-primary",
                 task.schedule()
