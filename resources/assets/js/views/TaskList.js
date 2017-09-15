@@ -38,7 +38,7 @@ module.exports = {
   },
   view: function(vnode) {
     return [
-      m("h1.date.mar-sm", vnode.state.date),
+      m("h1.date.mar-sm", moment(vnode.state.date).format('YYYY-MM-DD (ddd)')),
       m(NewTask, {date: vnode.state.date}),
       m(".task-list.mar-sm",
         Task.list.map(function(task) {

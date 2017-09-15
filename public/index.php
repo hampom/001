@@ -37,6 +37,10 @@ $app->get('/[{year:[0-9]+}/{month:[0-9]+}/{day:[0-9]+}]', function (Request $req
     return $this->view->render($response, 'index.tpl');
 });
 
+$app->get('/today', function (Request $request, Response $response) {
+    return $this->view->render($response, 'index.tpl');
+});
+
 $app->get('/api/items/{year}-{month}-{day}', function (Request $request, Response $response) {
     $year = $request->getAttribute('year');
     $month = $request->getAttribute('month');
@@ -122,11 +126,11 @@ $app->put('/api/items/{id}', function (Request $request, Response $response) {
             'message' => 'スケジュールチェックの指定に誤りがあります。'
         ],
         'startAt' => [
-            'rules' => V::date("H:i"),
+            'rules' => V::Optional(V::date("H:i")),
             'message' => '開始時の指定に誤りがあります。'
         ],
         'endAt' => [
-            'rules' => V::date("H:i"),
+            'rules' => V::Optional(V::date("H:i")),
             'message' => '終了時の指定に誤りがあります。'
         ],
         'date' => [
