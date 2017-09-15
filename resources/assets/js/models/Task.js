@@ -20,7 +20,14 @@ var taskModel = function(data) {
 
 var Task = {
   list: [],
+  error: {
+    title: Stream(""),
+    startAt: Stream(""),
+    endAt: Stream("")
+  },
   add: function(title, date) {
+    Task.error.title("")
+
     return m.request({
       method: "POST",
       url: API_URI,
@@ -33,8 +40,15 @@ var Task = {
     .then(function(result) {
       Task.loadList(date)
     })
+    .catch(function(e) {
+      if (e.hasOwnProperty('title')) {
+        Task.error.title(e.title[0])
+      }
+    })
   },
   update: function(task, date) {
+    Task.error.startAt("")
+    Task.error.endAt("")
     return m.request({
       method: "PUT",
       url: API_URI + "/" + task.id(),
@@ -51,6 +65,15 @@ var Task = {
     })
     .then(function(result) {
       Task.loadList(date)
+    })
+    .catch(function(e) {
+      if (e.hasOwnProperty('startAt')) {
+        Task.error.startAt(e.startAt[0])
+      }
+      if (e.hasOwnProperty('endAt')) {
+        Task.error.endAt(e.endAt[0])
+      }
+      console.log(e)
     })
   },
   delete: function(task, date) {

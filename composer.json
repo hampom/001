@@ -5,6 +5,7 @@
         "robmorgan/phinx": "^0.9.0",
         "eluceo/ical": "^0.12.1",
         "slim/php-view": "^2.2",
-        "cakephp/database": "^3.5"
+        "cakephp/database": "^3.5",
+        "awurth/slim-validation": "^2.1"
     }
 }

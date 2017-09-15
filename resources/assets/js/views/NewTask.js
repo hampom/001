@@ -15,13 +15,28 @@ module.exports = {
           e.preventDefault()
           Task
             .add(vnode.state.title(), vnode.attrs.date())
-            .then(vnode.state.title(""))
+            .then(function() {
+              if (! Task.error.title()) {
+                vnode.state.title("")
+              }
+            })
         }
       },
-      m(".input-group.w-75.mar-sm", [
-        m("input[type=text]", { oninput: m.withAttr("value", vnode.state.title), value: vnode.state.title }),
-        m("button", "登録")
-      ])
+      m(".input-field.w-75.mar-sm",
+        {
+          class: Task.error.title() ? "input-invalid" : ""
+        },
+        [
+        Task.error.title()
+          ? m('label', Task.error.title())
+          : "",
+        m(".input-group.w-75.mar-sm",
+          [
+            m("input[type=text]", { oninput: m.withAttr("value", vnode.state.title), value: vnode.state.title }),
+            m("button", "登録")
+          ]),
+        ]
+      )
     )
   }
 }

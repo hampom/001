@@ -83,7 +83,21 @@ module.exports = {
                   display: task.edit() ? "block" : "none"
                 }
               },
-              m(".input-group.w-50", [
+              Task.error.startAt() || Task.error.endAt()
+                ? m(".input-field.input-invalid", [
+                  Task.error.startAt()
+                    ? m('label', Task.error.startAt())
+                    : "",
+                  Task.error.endAt()
+                    ? m('label', Task.error.endAt())
+                    : "",
+                ])
+                : "",
+              m(".input-group.w-50",
+              {
+                class: (Task.error.startAt() || Task.error.endAt()) ? "input-invalid" : ""
+              },
+              [
                 m("span.input-addon", [
                   m("label", [
                     m("i.fa.fa-fw", {
@@ -105,6 +119,9 @@ module.exports = {
                     task.desc.map(function () {
                       setHeight(v.dom)
                     })
+                  },
+                  onupdate: function (vnode) {
+                    vnode.dom.focus()
                   },
                   oninput: m.withAttr("value", task.desc),
                   value: task.desc()

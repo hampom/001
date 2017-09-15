@@ -3,7 +3,7 @@ use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
 use \Eluceo\iCal\Component\Calendar;
 use \Eluceo\iCal\Component\Event;
-use \Cake\Database\Connection;
+use \Respect\Validation\Validator as V;
 
 require '../vendor/autoload.php';
 
@@ -19,7 +19,7 @@ $container['logger'] = function ($c) {
 };
 
 $container['db'] = function ($c) {
-    return new Connection([
+    return new \Cake\Database\Connection([
         'driver' => '\Cake\Database\Driver\Sqlite',
         'database' => '../sql/task.db'
     ]);
@@ -27,6 +27,10 @@ $container['db'] = function ($c) {
 
 $container['view'] = function ($c) {
     return new \Slim\Views\PhpRenderer('../src/views');
+};
+
+$container['validator'] = function () {
+    return new \Awurth\SlimValidation\Validator();
 };
 
 $app->get('/[{year:[0-9]+}/{month:[0-9]+}/{day:[0-9]+}]', function (Request $request, Response $response) {
@@ -61,11 +65,23 @@ $app->get('/api/items/{year}-{month}-{day}', function (Request $request, Respons
 });
 
 $app->post('/api/items', function (Request $request, Response $response) {
+    $this->validator->validate($request, [
+        'title' => [
+            'rules' => V::notBlank()->length(1, 50),
+            'message' => 'タイトルは1文字以上50文字以下でご入力ください。'
+        ],
+        'date' => [
+            'rules' => V::notBlank()->date(),
+            'message' => '登録日の指定に誤りがあります。'
+        ]
+    ]);
+
+    if (! $this->validator->isValid()) {
+        return $response->withJson($this->validator->getErrors(), 403);
+    }
+
     $title = $request->getParsedBodyParam('title');
     $date = $request->getParsedBodyParam('date');
-
-    if (empty($title) || empty($date)) {
-    }
 
     $sth = $this->db->insert(
         'items',
@@ -83,7 +99,7 @@ $app->post('/api/items', function (Request $request, Response $response) {
     $id = $sth->lastInsertId();
 
     $item = $this->db->newQuery()
-        ->select('id, title, desc, date, done, scheudle, startAt, endAt')
+        ->select('id, title, desc, date, done, schedule, startAt, endAt')
         ->from('items')
         ->where(['id' => $id])
         ->execute()
@@ -92,10 +108,37 @@ $app->post('/api/items', function (Request $request, Response $response) {
     $item['done'] = (bool)$item['done'];
     $item['schedule'] = (bool)$item['schedule'];
 
-    return $response->withJson($item);
+    return $response->withJson($item, 201);
 });
 
 $app->put('/api/items/{id}', function (Request $request, Response $response) {
+    $this->validator->validate($request, [
+        'title' => [
+            'rules' => V::notBlank()->length(1, 50),
+            'message' => 'タイトルは1文字以上50文字以下でご入力ください。'
+        ],
+        'schedule' => [
+            'rules' => V::boolType(),
+            'message' => 'スケジュールチェックの指定に誤りがあります。'
+        ],
+        'startAt' => [
+            'rules' => V::date("H:i"),
+            'message' => '開始時の指定に誤りがあります。'
+        ],
+        'endAt' => [
+            'rules' => V::date("H:i"),
+            'message' => '終了時の指定に誤りがあります。'
+        ],
+        'date' => [
+            'rules' => V::notBlank()->date(),
+            'message' => '登録日の指定に誤りがあります。'
+        ]
+    ]);
+
+    if (! $this->validator->isValid()) {
+        return $response->withJson($this->validator->getErrors(), 403);
+    }
+
     $id = $request->getAttribute('id');
     $title = $request->getParsedBodyParam('title');
     $desc = $request->getParsedBodyParam('desc');
@@ -104,9 +147,6 @@ $app->put('/api/items/{id}', function (Request $request, Response $response) {
     $schedule = $request->getParsedBodyParam('schedule');
     $startAt = $request->getParsedBodyParam('startAt');
     $endAt = $request->getParsedBodyParam('endAt');
-
-    if (empty($title) || empty($desc) || empty($done) || empty($date) || empty($scheudle) || empty($startAt) || empty($endAt)) {
-    }
 
     $this->db->update(
         'items',
