@@ -19,7 +19,7 @@ module.exports = {
   date: Stream(""),
   oninit: function(vnode) {
     if (moment([vnode.attrs.year, vnode.attrs.month, vnode.attrs.day]).isValid() === false) {
-      m.route.set("/")
+      m.route.set("/today")
     }
     vnode.state.date(vnode.attrs.year + "-" + vnode.attrs.month + "-" + vnode.attrs.day)
 
@@ -38,7 +38,7 @@ module.exports = {
   },
   view: function(vnode) {
     return [
-      m("h1.date.mar-sm", moment(vnode.state.date).format('YYYY-MM-DD (ddd)')),
+      m("h1.date.mar-sm", moment(vnode.state.date, "YYY-MM-DD").format('YYYY-MM-DD (ddd)')),
       m(NewTask, {date: vnode.state.date}),
       m(".task-list.mar-sm",
         Task.list.map(function(task) {
@@ -57,7 +57,7 @@ module.exports = {
               task.title
             ),
             m(".row", [
-              m(".col-1",
+              m(".col-2",
                 moment().format('YYYY-MM-DD') != moment(task.date()).format('YYYY-MM-DD')
                   ? m("small.text-warning", [m("i.fa.fa-fw.fa-plus-circle"), moment(task.date()).format('YYYY-MM-DD')])
                   : ""

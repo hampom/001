@@ -1,5 +1,6 @@
 var m = require("mithril")
 var Stream = require("mithril/stream")
+var User = require("./User")
 
 const API_URI = "http://localhost:8080/api/items"
 
@@ -27,13 +28,16 @@ var Task = {
   },
   add: function(title, date) {
     Task.error.title("")
-
+    console.log("aaaa")
     return m.request({
       method: "POST",
       url: API_URI,
       data: {
         title: title,
         date: date
+      },
+      headers: {
+        "Authorization": "Bearer " + User.getToken()
       },
       type: taskModel
     })
@@ -44,6 +48,7 @@ var Task = {
       if (e.hasOwnProperty('title')) {
         Task.error.title(e.title[0])
       }
+      console.log(e)
     })
   },
   update: function(task, date) {
@@ -52,6 +57,9 @@ var Task = {
     return m.request({
       method: "PUT",
       url: API_URI + "/" + task.id(),
+      headers: {
+        "Authorization": "Bearer " + User.getToken()
+      },
       data: {
         title: task.title(),
         desc: task.desc(),
@@ -80,6 +88,9 @@ var Task = {
     return m.request({
       method: "DELETE",
       url: API_URI + "/" + task.id(),
+      headers: {
+        "Authorization": "Bearer " + User.getToken()
+      },
     })
     .then(function(result) {
       Task.loadList(date)
@@ -89,10 +100,33 @@ var Task = {
     return m.request({
       method: "GET",
       url: API_URI + "/" + date,
-      type: taskModel
+      headers: {
+        "Authorization": "Bearer " + User.getToken()
+      },
+      extract: function (xhr) { return { status: xhr.status, body: xhr.responseText } },
+      type: function (res) {
+        try {
+          data = JSON.parse(res.body)
+          if (Array.isArray(data)) {
+            for (var i = 0; i < data.length; i++) {
+              data[i] = new taskModel(data[i])
+            }
+          } else {
+            data = new taskModel(data)
+          }
+          return data
+        } catch (e) {
+          throw new Error(res)
+        }
+      }
     })
-    .then(function(tasks) {
+    .then(function (tasks) {
       Task.list = tasks
+    })
+    .catch(function (e) {
+      if (e.status == 401) {
+        m.route.set("/")
+      }
     })
   }
 }

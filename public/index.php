@@ -33,6 +33,42 @@ $container['validator'] = function () {
     return new \Awurth\SlimValidation\Validator();
 };
 
+$app->add(new \Slim\Middleware\JwtAuthentication([
+    "path" => "/api",
+    "passthrough" => ["/api/token"],
+    "secret" => "supersecretkeyyoushouldnotcommittogithub"
+]));
+
+$container["HttpBasicAuthentication"] = function ($container) {
+    return new \Tuupola\Middleware\HttpBasicAuthentication([
+        "path" => "/api/token",
+        "users" => [
+            "test" => "test"
+        ]
+    ]);
+};
+
+$app->post('/api/token', function(Request $request, Response $response) {
+    $now = new \DateTime();
+    $future = new \DateTime("now +2 hours");
+    $server = $request->getServerParams();
+    $jti = (new \Tuupola\Base62)->encode(random_bytes(16));
+    $payload = [
+        "iat" => $now->getTimeStamp(),
+        "exp" => $future->getTimeStamp(),
+        "jti" => $jti,
+        "sub" => $server["PHP_AUTH_USER"],
+    ];
+    $secret = "supersecretkeyyoushouldnotcommittogithub";
+    //$secret = getenv("JWT_SECRET");
+    $token = \Firebase\JWT\JWT::encode($payload, $secret, "HS256");
+    $data["token"] = $token;
+    $data["expires"] = $future->getTimeStamp();
+    return $response->withStatus(201)
+        ->withHeader("Content-Type", "application/json")
+        ->write(json_encode($data, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+});
+
 $app->get('/[{year:[0-9]+}/{month:[0-9]+}/{day:[0-9]+}]', function (Request $request, Response $response) {
     return $this->view->render($response, 'index.tpl');
 });

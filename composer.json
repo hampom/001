@@ -6,6 +6,8 @@
         "eluceo/ical": "^0.12.1",
         "slim/php-view": "^2.2",
         "cakephp/database": "^3.5",
-        "awurth/slim-validation": "^2.1"
+        "awurth/slim-validation": "^2.1",
+        "tuupola/slim-jwt-auth": "^2.3",
+        "tuupola/base62": "^0.8.0"
     }
 }
