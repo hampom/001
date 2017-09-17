@@ -4,9 +4,13 @@ use \Psr\Http\Message\ResponseInterface as Response;
 use \Eluceo\iCal\Component\Calendar;
 use \Eluceo\iCal\Component\Event;
 use \Respect\Validation\Validator as V;
+use \Slim\Middleware\HttpBasicAuthentication\PdoAuthenticator;
 
 require '../vendor/autoload.php';
 
+CONST DB = __DIR__ . "/../sql/task.db";
+
+$pdo = new \PDO("sqlite:" . DB);
 $app = new \Slim\App;
 
 $container = $app->getContainer();
@@ -21,7 +25,7 @@ $container['logger'] = function ($c) {
 $container['db'] = function ($c) {
     return new \Cake\Database\Connection([
         'driver' => '\Cake\Database\Driver\Sqlite',
-        'database' => '../sql/task.db'
+        'database' => DB
     ]);
 };
 
@@ -33,32 +37,72 @@ $container['validator'] = function () {
     return new \Awurth\SlimValidation\Validator();
 };
 
+$container["jwt"] = function ($container) {
+    return new StdClass;
+};
+
 $app->add(new \Slim\Middleware\JwtAuthentication([
     "path" => "/api",
     "passthrough" => ["/api/token"],
-    "secret" => "supersecretkeyyoushouldnotcommittogithub"
+    "secret" => "supersecretkeyyoushouldnotcommittogithub",
+    "callback" => function ($request, $response, $arguments) use ($container) {
+        $container["jwt"] = $arguments["decoded"];
+    }
 ]));
 
-$container["HttpBasicAuthentication"] = function ($container) {
-    return new \Tuupola\Middleware\HttpBasicAuthentication([
-        "path" => "/api/token",
-        "users" => [
-            "test" => "test"
-        ]
-    ]);
-};
+$app->add(new \Slim\Middleware\HttpBasicAuthentication([
+    "path" => "/api/token",
+    "realm" => "Protected",
+    "authenticator" => new PdoAuthenticator([
+        "pdo" => $pdo,
+        "table" => "users",
+        "user" => "user_name",
+        "hash" => "password",
+    ])
+]));
+
+$app->post('/api/token_refresh', function(Request $request, Response $response) {
+    $now = new \DateTime();
+    $future = new \DateTime("now +2 hours");
+    $jti = (new \Tuupola\Base62)->encode(random_bytes(16));
+
+    $payload = [
+        "iat" => $now->getTimeStamp(),
+        "exp" => $future->getTimeStamp(),
+        "jti" => $jti,
+        "user_id" => $this->jwt->user_id,
+    ];
+
+    $secret = "supersecretkeyyoushouldnotcommittogithub";
+    //$secret = getenv("JWT_SECRET");
+    $token = \Firebase\JWT\JWT::encode($payload, $secret, "HS256");
+    $data["token"] = $token;
+    $data["expires"] = $future->getTimeStamp();
+    return $response->withStatus(201)
+        ->withHeader("Content-Type", "application/json")
+        ->write(json_encode($data, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+});
 
 $app->post('/api/token', function(Request $request, Response $response) {
     $now = new \DateTime();
     $future = new \DateTime("now +2 hours");
     $server = $request->getServerParams();
     $jti = (new \Tuupola\Base62)->encode(random_bytes(16));
+
+    $user = $this->db->newQuery()
+        ->select('id')
+        ->from('users')
+        ->where(['user_name' => $server['PHP_AUTH_USER']])
+        ->execute()
+        ->fetch('assoc');
+
     $payload = [
         "iat" => $now->getTimeStamp(),
         "exp" => $future->getTimeStamp(),
         "jti" => $jti,
-        "sub" => $server["PHP_AUTH_USER"],
+        "user_id" => $user['id'],
     ];
+
     $secret = "supersecretkeyyoushouldnotcommittogithub";
     //$secret = getenv("JWT_SECRET");
     $token = \Firebase\JWT\JWT::encode($payload, $secret, "HS256");

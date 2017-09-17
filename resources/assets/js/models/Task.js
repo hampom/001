@@ -122,6 +122,7 @@ var Task = {
     })
     .then(function (tasks) {
       Task.list = tasks
+      User.refreshToken();
     })
     .catch(function (e) {
       if (e.status == 401) {
