@@ -1,15 +1,17 @@
-var m = require("mithril")
-var Stream = require("mithril/stream")
+import m from "mithril";
+import Stream from "mithril/stream";
 
 const TOKEN_API_URI = "http://localhost:8080/api/token"
 
-var userModel = function(data) {
-  this.expires = Stream(data.expires)
-  this.token = Stream(data.token)
+class userModel {
+  constructor(data) {
+    this.expires = Stream(data.expires);
+    this.token = Stream(data.token);
+  }
 }
 
-var User = {
-  login: function(user_name, password) {
+class User {
+  login(user_name, password) {
     return m.request({
       method: "POST",
       url: TOKEN_API_URI,
@@ -17,32 +19,34 @@ var User = {
       password: password,
       type: userModel
     })
-    .then(function(result) {
-      localStorage.setItem('token', result.token())
+    .then((result) => {
+      localStorage.setItem('token', result.token());
     })
-    .catch(function(e) {
-        throw new Error(e)
-    })
-  },
-  refreshToken: function() {
+    .catch((e) => {
+      throw new Error(e);
+    });
+  }
+
+  refreshToken() {
     return m.request({
       method: "POST",
       url: TOKEN_API_URI + "_refresh",
       type: userModel,
       headers: {
-        "Authorization": "Bearer " + User.getToken()
+        "Authorization": "Bearer " + this.getToken()
       }
     })
-    .then(function(result) {
-      localStorage.setItem('token', result.token())
+    .then((result) => {
+      localStorage.setItem('token', result.token());
     })
-    .catch(function(e) {
-        throw new Error(e)
-    })
-  },
-  getToken: function() {
-    return localStorage.getItem('token')
+    .catch((e) => {
+      throw new Error(e);
+    });
+  }
+
+  getToken() {
+    return localStorage.getItem('token');
   }
 }
 
-module.exports = User
+export default new User();

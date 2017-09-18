@@ -1,25 +1,35 @@
-var m = require("mithril")
-var Stream = require("mithril/stream")
-var Task = require("../models/Task")
+import m from "mithril";
+import Stream from "mithril/stream";
+import moment from "moment";
 
-module.exports = {
-  title: Stream(""),
-  date: Stream(""),
-  oninit: function(vnode) {
-      vnode.state.date(vnode.attrs.date)
-  },
-  view: function(vnode) {
+import Task from "../models/Task";
+
+export default class NewTask {
+  constructor(vnode) {
+    this.title = Stream("");
+    this.date = Stream("");
+  }
+
+  oninit(vnode) {
+    this.date(vnode.attrs.date);
+  }
+
+  add() {
+    Task
+      .add(this.title, this.date)
+      .then(() => {
+        if (!Task.error.title()) {
+          this.title("");
+        }
+      })
+  }
+
+  view(vnode) {
     return m("form",
       {
-        onsubmit: function (e) {
-          e.preventDefault()
-          Task
-            .add(vnode.state.title(), vnode.attrs.date())
-            .then(function() {
-              if (! Task.error.title()) {
-                vnode.state.title("")
-              }
-            })
+        onsubmit: (e) => {
+          e.preventDefault();
+          vnode.state.add();
         }
       },
       m(".input-field.w-75.mar-sm",
@@ -27,14 +37,14 @@ module.exports = {
           class: Task.error.title() ? "input-invalid" : ""
         },
         [
-        Task.error.title()
-          ? m('label', Task.error.title())
-          : "",
-        m(".input-group.w-75.mar-sm",
-          [
-            m("input[type=text]", { oninput: m.withAttr("value", vnode.state.title), value: vnode.state.title }),
-            m("button", "登録")
-          ]),
+          Task.error.title()
+            ? m('label', Task.error.title())
+            : "",
+          m(".input-group.w-75.mar-sm",
+            [
+              m("input[type=text]", { oninput: m.withAttr("value", vnode.state.title), value: vnode.state.title }),
+              m("button", "登録")
+            ]),
         ]
       )
     )

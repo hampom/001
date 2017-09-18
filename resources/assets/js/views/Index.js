@@ -1,47 +1,54 @@
-var m = require("mithril")
-var Stream = require("mithril/stream")
-var User = require("../models/User")
+import m from "mithril";
+import Stream from "mithril/stream";
+import User from "../models/User";
 
-module.exports = {
-  user_name: Stream(""),
-  password: Stream(""),
-  oninit: function (vnode) {
-    vnode.state.error = Stream.combine(
-      function(user_name, password) {
+export default class Index {
+  constructor(vnode) {
+    this.user_name = Stream("");
+    this.password = Stream("");
+  }
+  oninit(vnode) {
+    this.error = Stream.combine(
+      (user_name, password) => {
         return user_name() && password()
       },
       [
-        vnode.state.user_name,
-        vnode.state.password
+        this.user_name,
+        this.password
       ]
     );
-  },
-  view: function(vnode) {
+  }
+
+  login() {
+    if (!this.error()) {
+      return;
+    }
+
+    User.login(this.user_name(), this.password())
+        .then((e) => {
+          m.route.set("/today")
+        })
+        .catch((e) => {
+          // TODO: エラーを出力
+        });
+  }
+
+  view(vnode) {
     return m("form",
       {
-        onsubmit: function (e) {
-          e.preventDefault()
-          if (!vnode.state.error()) {
-            return;
-          }
-
-          User.login(vnode.state.user_name(), vnode.state.password())
-          .then(function(e) {
-            m.route.set("/today")
-          })
-          .catch(function(e) {
-            // TODO: エラーを出力
-          })
+        onsubmit: (e) => {
+          e.preventDefault();
+          vnode.state.login();
         }
       },
       [
         m(".input-field", [
           m("label", "ユーザー名"),
-          m("input[type=text]", { oninput: m.withAttr("value", vnode.state.user_name), value: vnode.state.user_name})
+          m("input[type=text]", { oninput: m.withAttr("value", vnode.state.user_name), value: vnode.state.user_name })
         ]),
         m(".input-field", [
           m("label", "パスワード"),
-          m("input[type=password]", { oninput: m.withAttr("value", vnode.state.password), value: vnode.state.password})
+          m("input[type=password]", { oninput: m.withAttr("value", vnode.state.password), value: vnode.state.password })
         ]),
         m("button", "ログイン")
       ]
