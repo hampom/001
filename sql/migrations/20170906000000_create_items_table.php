@@ -16,7 +16,7 @@ class CreateItemsTable extends AbstractMigration
               ->addColumn('title', 'string')
               ->addColumn('desc', 'text')
               ->addColumn('date', 'date')
-              ->addColumn('done', 'boolean', ['default' => false])
+              ->addColumn('done_date', 'date')
               ->save();
     }
 

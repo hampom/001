@@ -127,10 +127,15 @@ $app->get('/api/items/{year}-{month}-{day}', function (Request $request, Respons
     $day = $request->getAttribute('day');
 
     $sth = $this->db->newQuery()
-        ->select('id, title, desc, date, done, schedule, startAt, endAt')
+        ->select('id, title, desc, date, done_date, schedule, startAt, endAt')
         ->from('items')
         ->where(['date <' => "$year-$month-$day"])
-        ->andWhere(['done' => (int)false])
+        ->andWhere(function($exp) use ($year, $month, $day) {
+            return $exp->or_([
+                $exp->isNull('done_date'),
+                'done_date' => "$year-$month-$day"
+            ]);
+        })
         ->orWhere(['date' => "$year-$month-$day"])
         ->order([
             'date' => 'ASC',
@@ -140,7 +145,7 @@ $app->get('/api/items/{year}-{month}-{day}', function (Request $request, Respons
 
     $items = [];
     while ($item = $sth->fetch('assoc')) {
-        $item['done'] = (bool)$item['done'];
+        $item['done'] = !is_null($item['done_date']);
         $item['schedule'] = (bool)$item['schedule'];
         $items[] = $item;
     }
@@ -174,7 +179,7 @@ $app->post('/api/items', function (Request $request, Response $response) {
             'title' => $title,
             'desc' => "",
             'date' => $date,
-            'done' => 0,
+            'done_date' => null,
             'schedule' => 0,
             'startAt' => "",
             'endAt' => ""
@@ -183,13 +188,13 @@ $app->post('/api/items', function (Request $request, Response $response) {
     $id = $sth->lastInsertId();
 
     $item = $this->db->newQuery()
-        ->select('id, title, desc, date, done, schedule, startAt, endAt')
+        ->select('id, title, desc, date, done_date, schedule, startAt, endAt')
         ->from('items')
         ->where(['id' => $id])
         ->execute()
         ->fetch('assoc');
 
-    $item['done'] = (bool)$item['done'];
+    $item['done'] = !is_null($item['done_date']);
     $item['schedule'] = (bool)$item['schedule'];
 
     return $response->withJson($item, 201);
@@ -237,7 +242,7 @@ $app->put('/api/items/{id}', function (Request $request, Response $response) {
         [
             'title' => $title,
             'desc' => $desc,
-            'done' => (int)$done,
+            'done_date' => $done ? (new \DateTime())->format("Y-m-d"): null,
             'date' => $date,
             'schedule' => (int)$schedule,
             'startAt' => $startAt,
@@ -247,13 +252,13 @@ $app->put('/api/items/{id}', function (Request $request, Response $response) {
     );
 
     $item = $this->db->newQuery()
-        ->select('id, title, desc, date, done, schedule, startAt, endAt')
+        ->select('id, title, desc, date, done_date, schedule, startAt, endAt')
         ->from('items')
         ->where(['id' => $id])
         ->execute()
         ->fetch('assoc');
 
-    $item['done'] = (bool)$item['done'];
+    $item['done'] = !is_null($item['done_date']);
     $item['schedule'] = (bool)$item['schedule'];
 
     return $response->withJson($item);
