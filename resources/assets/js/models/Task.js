@@ -10,14 +10,6 @@ class taskModel {
     this.id = Stream(data.id);
     this.title = Stream(data.title);
     this.desc = Stream(data.desc);
-    this.format_desc = Stream.combine(
-      (desc) => {
-        return desc().replace(/[\n\r]/g, "<br />");
-      },
-      [
-        this.desc
-      ]
-    );
     this.date = Stream(data.date);
     this.done = Stream(data.done);
     this.schedule = Stream(data.schedule);
@@ -29,7 +21,7 @@ class taskModel {
 
 class Task {
   constructor() {
-    this.list = [];
+    this.list = Stream([]);
     this.error = {
       title: Stream(""),
       startAt: Stream(""),
@@ -51,9 +43,7 @@ class Task {
       },
       type: taskModel
     })
-    .then((result) => {
-      this.loadList(date);
-    })
+    .then((result) => this.loadList(date))
     .catch((e) => {
       if (e.hasOwnProperty('title')) {
         this.error.title(e.title[0]);
@@ -81,9 +71,7 @@ class Task {
       },
       type: taskModel
     })
-    .then((result) => {
-      this.loadList(date);
-    })
+    .then((result) => this.loadList(date))
     .catch((e) => {
       if (e.hasOwnProperty('startAt')) {
         this.error.startAt(e.startAt[0]);
@@ -102,9 +90,7 @@ class Task {
         "Authorization": "Bearer " + User.getToken()
       },
     })
-    .then((result) => {
-      this.loadList(date);
-    });
+    .then((result) => this.loadList(date));
   }
 
   loadList(date) {
@@ -131,10 +117,8 @@ class Task {
         }
       }
     })
-    .then((tasks) => {
-      this.list = tasks;
-      User.refreshToken();
-    })
+    .then(this.list)
+    .then(User.refreshToken())
     .catch((e) => {
       if (e.status == 401) {
         m.route.set("/");

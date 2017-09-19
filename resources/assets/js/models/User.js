@@ -19,9 +19,7 @@ class User {
       password: password,
       type: userModel
     })
-    .then((result) => {
-      localStorage.setItem('token', result.token());
-    })
+    .then((result) => localStorage.setItem('token', result.token()))
     .catch((e) => {
       throw new Error(e);
     });
@@ -36,9 +34,7 @@ class User {
         "Authorization": "Bearer " + this.getToken()
       }
     })
-    .then((result) => {
-      localStorage.setItem('token', result.token());
-    })
+    .then((result) => localStorage.setItem('token', result.token()))
     .catch((e) => {
       throw new Error(e);
     });

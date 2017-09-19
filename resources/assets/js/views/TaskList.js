@@ -1,6 +1,7 @@
 import m from "mithril";
 import Stream from "mithril/stream";
 import moment from "moment";
+import marked from 'marked';
 
 import NewTask from "./NewTask";
 
@@ -48,17 +49,18 @@ export default class TaskList {
       m("h1.date.mar-sm", moment(vnode.state.date, "YYYY-MM-DD").format('YYYY-MM-DD (ddd)')),
       m(NewTask, { date: vnode.state.date }),
       m(".task-list.mar-sm",
-        Task.list.map((task) => {
+        Task.list().map((task) => {
           return [
             m("h4",
               {
                 style: { "font-family": "serif" },
-                ondblclick: (v) => { task.edit(!task.edit()) }
+                ondblclick: (v) => task.edit(!task.edit())
               },
               m("i.fa.mar-r-sm",
                 {
+                  style: { "cursor": "pointer" },
                   class: task.done() ? "fa-calendar-check-o" : "fa-calendar-o",
-                  onclick: (v) => { vnode.state.done(task) }
+                  onclick: (v) => vnode.state.done(task)
                 }
               ),
               task.title
@@ -82,7 +84,7 @@ export default class TaskList {
                   display: !task.edit() ? "block" : "none"
                 }
               },
-              m.trust(task.format_desc())
+              m.trust(marked(task.desc()))
             ),
             m(".edit",
               {
@@ -110,7 +112,7 @@ export default class TaskList {
                       m("i.fa.fa-fw", {
                         class: task.schedule() ? 'fa-toggle-on' : 'fa-toggle-off',
                       }),
-                      m("span", { onclick: (v) => { task.schedule(!task.schedule()) } }, "スケジュール"),
+                      m("span", { onclick: (v) => task.schedule(!task.schedule()) }, "スケジュール"),
                     ])
                   ]),
                   m("input[type=text]", { 'placeholder': '開始時間 xx:xx', oninput: m.withAttr("value", task.startAt), value: task.startAt() }),
@@ -137,10 +139,10 @@ export default class TaskList {
               m(".input-field", [
                 m(".row.row-between", [
                   m(".col-1", [
-                    m("button.mar-r-ms", { onclick: (v) => { vnode.state.edit(task) } }, "登録")
+                    m("button.mar-r-ms", { onclick: (v) => vnode.state.edit(task) }, "登録")
                   ]),
                   m(".col-1", [
-                    m("button", { onclick: (v) => { vnode.state.delete(task) } }, "削除")
+                    m("button", { onclick: (v) => vnode.state.delete(task) }, "削除")
                   ]),
                 ])
               ])

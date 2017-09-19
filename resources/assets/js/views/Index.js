@@ -25,9 +25,7 @@ export default class Index {
     }
 
     User.login(this.user_name(), this.password())
-        .then((e) => {
-          m.route.set("/today")
-        })
+        .then((e) => m.route.set("/today"))
         .catch((e) => {
           // TODO: エラーを出力
         });
