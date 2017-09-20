@@ -42,6 +42,13 @@ class Task {
       headers: {
         "Authorization": "Bearer " + User.getToken()
       },
+      extract: (xhr) => {
+        if (xhr.status == 401) {
+          m.route.set('/');
+        }
+
+        return xhr.responseText;
+      },
       type: taskModel
     })
     .then((result) => this.loadList(date))
@@ -60,6 +67,13 @@ class Task {
       url: API_URI + "/" + task.id(),
       headers: {
         "Authorization": "Bearer " + User.getToken()
+      },
+      extract: (xhr) => {
+        if (xhr.status == 401) {
+          m.route.set('/');
+        }
+
+        return xhr.responseText;
       },
       data: {
         title: task.title(),
@@ -91,6 +105,13 @@ class Task {
       headers: {
         "Authorization": "Bearer " + User.getToken()
       },
+      extract: (xhr) => {
+        if (xhr.status == 401) {
+          m.route.set('/');
+        }
+
+        return xhr.responseText;
+      },
     })
     .then((result) => this.loadList(date));
   }
@@ -102,30 +123,19 @@ class Task {
       headers: {
         "Authorization": "Bearer " + User.getToken()
       },
-      extract: (xhr) => { return { status: xhr.status, body: xhr.responseText }; },
-      type: (res) => {
-        try {
-          var data = JSON.parse(res.body);
-          if (Array.isArray(data)) {
-            for (var i = 0; i < data.length; i++) {
-              data[i] = new taskModel(data[i]);
-            }
-          } else {
-            data = new taskModel(data);
-          }
-          return data;
-        } catch (e) {
-          throw new Error(res);
+      extract: (xhr) => {
+        if (xhr.status == 401) {
+          m.route.set('/');
         }
-      }
+
+        let data = xhr.responseText;
+        try {return data !== "" ? JSON.parse(data) : null}
+        catch (e) {throw new Error(data)}
+      },
+      type: taskModel
     })
     .then(this.list)
-    .then(User.refreshToken())
-    .catch((e) => {
-      if (e.status == 401) {
-        m.route.set("/");
-      }
-    });
+    .then(User.refreshToken());
   }
 }
 
