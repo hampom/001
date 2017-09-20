@@ -16,6 +16,7 @@ class taskModel {
     this.startAt = Stream(data.startAt);
     this.endAt = Stream(data.endAt);
     this.edit = Stream(false);
+    this.tags = Stream(data.tags);
   }
 }
 
@@ -67,7 +68,8 @@ class Task {
         date: task.date(),
         schedule: task.schedule(),
         startAt: task.startAt(),
-        endAt: task.endAt()
+        endAt: task.endAt(),
+        tags: task.tags()
       },
       type: taskModel
     })

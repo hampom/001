@@ -4,6 +4,7 @@ import moment from "moment";
 import marked from 'marked';
 
 import NewTask from "./NewTask";
+import TagInput from "./TagInput";
 
 import Task from "../models/Task";
 
@@ -84,7 +85,8 @@ export default class TaskList {
                   display: !task.edit() ? "block" : "none"
                 }
               },
-              m.trust(marked(task.desc()))
+              m.trust(marked(task.desc())),
+              task.tags().map((tag) => m('span.badge.mar-r-xs.mar-b-xs', tag))
             ),
             m(".edit",
               {
@@ -134,7 +136,8 @@ export default class TaskList {
                   },
                   oninput: m.withAttr("value", task.desc),
                   value: task.desc()
-                })
+                }),
+                m(TagInput, { tags: task.tags }),
               ]),
               m(".input-field", [
                 m(".row.row-between", [

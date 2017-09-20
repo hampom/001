@@ -8,7 +8,7 @@ use \Slim\Middleware\HttpBasicAuthentication\PdoAuthenticator;
 
 require '../vendor/autoload.php';
 
-CONST DB = __DIR__ . "/../sql/task.db";
+const DB = __DIR__ . "/../sql/task.db";
 
 $pdo = new \PDO("sqlite:" . DB);
 $app = new \Slim\App;
@@ -61,7 +61,7 @@ $app->add(new \Slim\Middleware\HttpBasicAuthentication([
     ])
 ]));
 
-$app->post('/api/token_refresh', function(Request $request, Response $response) {
+$app->post('/api/token_refresh', function (Request $request, Response $response) {
     $now = new \DateTime();
     $future = new \DateTime("now +2 hours");
     $jti = (new \Tuupola\Base62)->encode(random_bytes(16));
@@ -83,7 +83,7 @@ $app->post('/api/token_refresh', function(Request $request, Response $response) 
         ->write(json_encode($data, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
 });
 
-$app->post('/api/token', function(Request $request, Response $response) {
+$app->post('/api/token', function (Request $request, Response $response) {
     $now = new \DateTime();
     $future = new \DateTime("now +2 hours");
     $server = $request->getServerParams();
@@ -130,7 +130,7 @@ $app->get('/api/items/{year}-{month}-{day}', function (Request $request, Respons
         ->select('id, title, desc, date, done_date, schedule, startAt, endAt')
         ->from('items')
         ->where(['date <' => "$year-$month-$day"])
-        ->andWhere(function($exp) use ($year, $month, $day) {
+        ->andWhere(function ($exp) use ($year, $month, $day) {
             return $exp->or_([
                 $exp->isNull('done_date'),
                 'done_date' => "$year-$month-$day"
@@ -145,6 +145,20 @@ $app->get('/api/items/{year}-{month}-{day}', function (Request $request, Respons
 
     $items = [];
     while ($item = $sth->fetch('assoc')) {
+        $tags = $this->db->newQuery()
+            ->select('tags.name')
+            ->from('tags')
+            ->innerJoin('items_tags', [
+                'items_tags.tag_id = tags.id'
+            ])
+            ->where([
+                'items_tags.item_id' => $item['id']
+            ])
+            ->execute()
+            ->fetchAll('assoc');
+
+        $item['tags'] = is_null($tags) ? []: \Cake\Utility\Hash::extract($tags, '{n}.name');
+
         $item['done'] = !is_null($item['done_date']);
         $item['schedule'] = (bool)$item['schedule'];
         $items[] = $item;
@@ -228,6 +242,7 @@ $app->put('/api/items/{id}', function (Request $request, Response $response) {
         return $response->withJson($this->validator->getErrors(), 403);
     }
 
+    $this->logger->info(var_export($request->getParsedBody(), true));
     $id = $request->getAttribute('id');
     $title = $request->getParsedBodyParam('title');
     $desc = $request->getParsedBodyParam('desc');
@@ -236,7 +251,9 @@ $app->put('/api/items/{id}', function (Request $request, Response $response) {
     $schedule = $request->getParsedBodyParam('schedule');
     $startAt = $request->getParsedBodyParam('startAt');
     $endAt = $request->getParsedBodyParam('endAt');
+    $tags = $request->getParsedBodyParam('tags');
 
+    // item
     $this->db->update(
         'items',
         [
@@ -250,6 +267,46 @@ $app->put('/api/items/{id}', function (Request $request, Response $response) {
         ],
         ['id' => $id]
     );
+
+    // tag
+    $this->db->transactional(function ($conn) use ($id, $tags) {
+        $this->db->delete(
+            'items_tags',
+            ['item_id' => $id]
+        );
+
+        if (count($tags) == 0) {
+            return;
+        }
+
+        $insertStmt = $this->db->newQuery()
+            ->insert(['item_id', 'tag_id'])
+            ->into('items_tags');
+
+        foreach ($tags as $tag) {
+            $stmt = $this->db->newQuery()
+                ->select('id')
+                ->from('tags')
+                ->where(['name' => $tag])
+                ->execute();
+
+            if ($stmt->rowCount() > 0) {
+                $tagId = $stmt->fetch('assoc')['id'];
+            } else {
+                $sth = $this->db->insert(
+                    'tags',
+                    ['name' => $tag]
+                );
+                $tagId = $sth->lastInsertId();
+            }
+
+            $insertStmt->values([
+                'item_id' => $id,
+                'tag_id' => $tagId
+            ]);
+        }
+        $insertStmt->execute();
+    });
 
     $item = $this->db->newQuery()
         ->select('id, title, desc, date, done_date, schedule, startAt, endAt')
