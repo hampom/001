@@ -9,6 +9,7 @@
         "awurth/slim-validation": "^2.1",
         "tuupola/slim-jwt-auth": "^2.3",
         "tuupola/base62": "^0.8.0",
-        "tuupola/slim-basic-auth": "^2.2"
+        "tuupola/slim-basic-auth": "^2.2",
+        "squizlabs/php_codesniffer": "^3.1"
     }
 }
