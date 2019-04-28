@@ -1,4 +1,6 @@
 const path = require('path');
+const {GenerateSW} = require('workbox-webpack-plugin');
+const dist = __dirname + '/dist';
 
 module.exports = {
   entry: './resources/assets/js/index.js',
@@ -18,5 +20,12 @@ module.exports = {
       exclude: /node_modules/,
       loader: 'babel-loader',
     }]
-  }
+  },
+  plugins: [
+    new GenerateSW({
+      swDest: dist + '/js/sw.js',
+      clientsClaim: true,
+      skipWaiting: true,
+    })
+  ]
 }
