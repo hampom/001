@@ -1,0 +1,9 @@
+{
+	"name": "HAM001",
+	"short_name": "HAM001",
+	"theme_color": "#bacd22",
+	"background_color": "#528804",
+	"display": "standalone",
+	"scope": "/",
+	"start_url": "/"
+}
