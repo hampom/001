@@ -140,6 +140,13 @@ $app->get(
 );
 
 $app->get(
+    '/app-shell',
+    function (Request $request, Response $response) {
+        return $this->view->render($response, 'index.tpl');
+    }
+);
+
+$app->get(
     '/today',
     function (Request $request, Response $response) {
         return $this->view->render($response, 'index.tpl');
